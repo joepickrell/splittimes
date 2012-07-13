@@ -17,6 +17,7 @@ extern "C"{
 #include <string>
 #include <gsl/gsl_sf.h>
 #include <cmath>
+#include <sstream>
 //#include "nicksrc/nicklib.h"
 using namespace std;
 
@@ -28,6 +29,7 @@ public:
 	double tau;
 	vector<vector<double> > transition_probs;
 	void set_transition_probs();
+	void print_transition_probs(string);
 	double a, b, c, lambda;
 	double epsilon;
 	double phi, resphi;
@@ -44,6 +46,8 @@ public:
 	int golden_section_c(double, double, double, double, int, vector<int>, double *);
 	int golden_section_lambda(double, double, double, double, int, vector<int>, double *);
 	void print_spec_compare(int, vector<int>);
+	void print_spec_compare(string, int, vector<int>);
+	void print_params(string);
 	//pair<vector<double>, vector<double> > get_complete_spectrum(vector<double>, double);
 };
 
