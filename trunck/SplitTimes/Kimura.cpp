@@ -21,9 +21,9 @@ Kimura::Kimura(double drift){
 	set_transition_probs();
 	a = 0.0;
 	b = -1.0;
-	c = 1.0;
+	c = 1;
 	epsilon = 1e-7;
-	lambda = 0;
+	lambda = 0.001;
     phi = (1+sqrt(5))/2;
     resphi = 2-phi;
 
@@ -63,7 +63,7 @@ vector<double> Kimura::get_spectrum(vector<double> st){
 	vector<double> toreturn(N+2, 0.0);
 
 	// integrate
-	for (int i = 1; i <= N; i++){
+	for (int i = 0; i <= N; i++){
 		//cout << i  << "\n"; cout.flush();
 		double f = freqs[i];
 		double std = st[i]/(double)N;
@@ -72,6 +72,7 @@ vector<double> Kimura::get_spectrum(vector<double> st){
 			toreturn[j] += tmp[j]/(double)N* std;
 		}
 	}
+	//toreturn[0] = st[0]/ (double)N;
 	return toreturn;
 }
 
@@ -85,8 +86,9 @@ vector<double> Kimura::get_anc_spectrum(){
 		toreturn[i] = add;
 	}
 	for (int i = 0 ; i <= N+1; i++){
-		toreturn[i] = (toreturn[i] / sum)* (double)N;
+		toreturn[i] = (1-lambda)*(toreturn[i] / sum)* (double)N;
 	}
+	toreturn[0] = lambda*(double)N;
 	return toreturn;
 }
 
@@ -134,11 +136,21 @@ double Kimura::llk_anc(int m, vector<int> obs){
 void Kimura::set_transition_probs(){
 	transition_probs.clear();
 	for (int i = 0; i <= N+1; i++){
+		//cout << i  << "\n";
 		double f = freqs[i];
 		vector<double> tmpprobs = get_all_spectrum(f, tau);
 		transition_probs.push_back(tmpprobs);
 	}
+	cout << "\n";
 
+}
+
+void Kimura::print_transition_probs(string outfile){
+	ofstream out(outfile.c_str());
+	for (int i = 0; i < transition_probs.size(); i++){
+		for(int j = 0; j < transition_probs.size(); j++) out<< transition_probs[i][j] << " ";
+		out <<  "\n";
+	}
 }
 
 double Kimura::optim_anc(int m, vector<int> obs){
@@ -157,9 +169,12 @@ double Kimura::optim_anc(int m, vector<int> obs){
 		double max = 5;
 		//cout << "guessl "<< guesslambda << "\n";
 		golden_section_a(min, guessa, max, 0.0001, m, obs, &current_llk);
+		//cout << "c_a "<< current_llk << "\n";
 		golden_section_b(min, guessb, max, 0.0001, m, obs, &current_llk);
+		//cout << "c_b "<< current_llk << "\n";
 		golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
-		//golden_section_lambda(-20.0, guesslambda, 0.0, 0.0001, m, obs, &current_llk);
+		//cout << "c_c "<< current_llk << "\n";
+		golden_section_lambda(-20.0, guesslambda, -1, 0.0001, m, obs, &current_llk);
 		double new_llik = llk_anc(m, obs);
 		if (new_llik < start_llik+ epsilon) done = true;
 		else start_llik = new_llik;
@@ -257,24 +272,27 @@ int Kimura::golden_section_c(double min, double guess, double max, double tau, i
 int Kimura::golden_section_lambda(double min, double guess, double max, double tau, int m, vector<int> obs, double * current_llk){
 	double x;
 
+	//cout << "setting x "<< guess << " "<< min << " "<< max << "\n"; cout.flush();
 	if ( (max - guess) > (guess - min)) x = guess + resphi *( max - guess);
 	else x = guess - resphi *(guess-min);
+	//cout << "x set to "<< x << "\n"; cout.flush();
 	if (fabs(max-min) < tau * (fabs(guess)+fabs(max))) {
 		double new_lambda = (min+max)/2;
-		lambda = new_lambda;
+		lambda = exp(new_lambda);
 		*current_llk = llk_anc(m, obs);
+		//cout << "returning\n";
 		return 0;
 	}
-	cout << "x before "<< x << "\n";
+	//cout << "x before "<< x << "\n"; cout.flush();
 	lambda = exp(x);
 	double f_x = -llk_anc(m, obs);
-	cout << "x "<< lambda << " "<< f_x << "\n";
+	//cout << "x "<< lambda << " "<< f_x << "\n";  cout.flush();
 
-	cout << "guess before "<< guess << "\n";
+	//cout << "guess before "<< guess << "\n"; cout.flush();
 	lambda = exp(guess);
 
 	double f_guess = -llk_anc(m, obs);
-	cout << "guess "<< lambda << " "<< f_guess << "\n";
+	//cout << "guess "<< lambda << " "<< f_guess << "\n"; cout.flush();
 
 	if (f_x < f_guess){
 		if ( (max-guess) > (guess-min) )	return golden_section_lambda(guess, x, max, tau, m, obs, current_llk);
@@ -315,4 +333,45 @@ void Kimura::print_spec_compare(int m, vector<int> emp_spec){
 	for (int i = 0; i <=m; i++){
 		cout << i << " "<< theory_spec[i]<< " "<<  (double) emp_spec[i]/(double) total << "\n";
 	}
+}
+
+
+void Kimura::print_spec_compare(string f, int m, vector<int> emp_spec){
+	ofstream outf(f.c_str());
+	int total = 0;
+	vector<double> theory_spec(m+1, 0.0);
+	for (vector<int>::iterator it = emp_spec.begin(); it != emp_spec.end(); it++)total += *it;
+	vector<double> anc_spec = get_anc_spectrum();
+	for (int i = 0; i <= m ;i++){
+		for (int j = 0; j < freqs.size(); j++){
+			double initf = freqs[j];
+			double initdens = anc_spec[j]/ (double) N;
+			double tmpsum = 0;
+			for (int k = 0; k < freqs.size(); k++){
+				double f = freqs[k];
+				double trans = transition_probs[j][k]/(double) N;
+				double binom_prob = gsl_sf_fact(m)/(gsl_sf_fact(i)*gsl_sf_fact(m-i)) * pow(f, i)*pow(1-f, m-i);
+				//cout << i << " "<< initf<< " "<< f << " "<< initdens << " "<< trans << " "<< binom_prob << "\n";
+				tmpsum+= trans*binom_prob;
+
+			}
+			theory_spec[i] += initdens*tmpsum;
+		}
+	}
+	//for (int i = 0; i <=m; i++){
+	//	double tmp = theory_spec[i];
+	//	if (i <1e-8) theory_spec[i] = lambda + (1-lambda) * tmp;
+	//	else theory_spec[i] = (1-lambda) *tmp;
+	//}
+	for (int i = 0; i <=m; i++){
+		outf << i << " "<< theory_spec[i]<< " "<<  (double) emp_spec[i]/(double) total << "\n";
+	}
+}
+
+void Kimura::print_params(string f){
+	ofstream outf(f.c_str());
+	outf << "a "<< a << "\n";
+	outf << "b "<< b << "\n";
+	outf << "c "<< c << "\n";
+	outf << "lambda "<< lambda << "\n";
 }
