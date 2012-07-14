@@ -10,6 +10,7 @@
 
 
 #include "Kimura.h"
+#include "CountData.h"
 #include "CmdLine.h"
 using namespace std;
 
@@ -24,6 +25,7 @@ void printopts(){
 
 string infile;
 string outfile = "split_out";
+int blocksize = 500;
 double d;
 
 int main(int argc, char *argv[]){
@@ -45,6 +47,12 @@ int main(int argc, char *argv[]){
     }
     if (cmdline.HasSwitch("-o")) outfile = cmdline.GetArgument("-o", 0).c_str();
 
+    CountData cdata(infile, blocksize);
+    vector<int> counts = cdata.get_der_counts(0);
+    for (vector<int>::iterator it = counts.begin(); it != counts.end(); it++){
+    	cout << *it << "\n";
+    }
+    /*
     vector<int> counts;
     ifstream in(infile.c_str());
     vector<string> line;
@@ -58,13 +66,38 @@ int main(int argc, char *argv[]){
             }
             counts.push_back(atoi(line[0].c_str()));
     }
-
+*/
     Kimura k(d);
     int m = counts.size()-1;
     k.optim_anc(m, counts);
-    //cout << "done?\n"; cout.flush();
     k.print_spec_compare(outfile+".spec", m, counts);
     k.print_params(outfile+".params");
+    k.reset();
+    k.optim_anc_h0(m, counts);
+    k.print_spec_compare(outfile+".spec0", m, counts);
+    double lambda = k.lambda;
+    vector<double> lambdas;
+    for (int i = 0; i < cdata.nblock; i++){
+    	vector<int> tmpc = cdata.get_der_counts_jackknife(0, i);
+    	//for (vector<int>::iterator it = tmpc.begin(); it != tmpc.end(); it++){
+    	//	cout << *it << "\n";
+    	//}
+    	//k.reset();
+    	k.optim_anc(m, tmpc);
+    	cout << k.lambda << "\n";
+    	lambdas.push_back(k.lambda);
+    }
+    double m_lambda = 0;
+    for (vector<double>::iterator it = lambdas.begin(); it != lambdas.end(); it++) m_lambda+= *it;
+    m_lambda = m_lambda/ (double) lambdas.size();
+    double sum = 0;
+    for (vector<double>::iterator it = lambdas.begin(); it != lambdas.end(); it++) sum += (*it - m_lambda)*(*it- m_lambda);
+    double se = sqrt(  ((double) cdata.nblock - 1)/ (double) cdata.nblock * sum);
+    string tmpoutf = outfile +".lambdase";
+    ofstream lout (tmpoutf.c_str());
+    lout << m_lambda << " "<< se << "\n";
+
+
 
     return 0;
 }
