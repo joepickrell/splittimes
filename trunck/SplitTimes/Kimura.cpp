@@ -122,7 +122,12 @@ double Kimura::all_llk(int m, vector<int> obs, vector<double> spec){
 	}
 	return toreturn;
 }
-
+void Kimura::reset(){
+	a = 0.0;
+	b = -1.0;
+	c = 1.0;
+	lambda = 0.001;
+}
 double Kimura::llk_anc(int m, vector<int> obs){
 	double toreturn;
 
@@ -165,8 +170,8 @@ double Kimura::optim_anc(int m, vector<int> obs){
 		double guessb = b;
 		double guessc = c;
 		double guesslambda = log(lambda);
-		double min = -5;
-		double max = 5;
+		double min = -10.0;
+		double max = 10.0;
 		//cout << "guessl "<< guesslambda << "\n";
 		golden_section_a(min, guessa, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_a "<< current_llk << "\n";
@@ -174,7 +179,39 @@ double Kimura::optim_anc(int m, vector<int> obs){
 		//cout << "c_b "<< current_llk << "\n";
 		golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_c "<< current_llk << "\n";
-		golden_section_lambda(-20.0, guesslambda, -1, 0.0001, m, obs, &current_llk);
+		golden_section_lambda(-20.0, guesslambda, 0, 0.0001, m, obs, &current_llk);
+		double new_llik = llk_anc(m, obs);
+		if (new_llik < start_llik+ epsilon) done = true;
+		else start_llik = new_llik;
+
+	}
+	return current_llk;
+}
+
+
+double Kimura::optim_anc_h0(int m, vector<int> obs){
+	double start_llik = llk_anc(m, obs);
+	//cout << "start "<< start_llik << "\n";
+	double current_llk = start_llik;
+	bool done = false;
+	int nit = 0;
+	lambda = 0;
+	while(!done){
+
+		double guessa = a;
+		double guessb = b;
+		double guessc = c;
+		//double guesslambda = log(lambda);
+		double min = -10.0;
+		double max = 10.0;
+		//cout << "guessl "<< guesslambda << "\n";
+		golden_section_a(min, guessa, max, 0.0001, m, obs, &current_llk);
+		//cout << "c_a "<< current_llk << "\n";
+		golden_section_b(min, guessb, max, 0.0001, m, obs, &current_llk);
+		//cout << "c_b "<< current_llk << "\n";
+		golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
+		//cout << "c_c "<< current_llk << "\n";
+		//golden_section_lambda(-20.0, guesslambda, -1, 0.0001, m, obs, &current_llk);
 		double new_llik = llk_anc(m, obs);
 		if (new_llik < start_llik+ epsilon) done = true;
 		else start_llik = new_llik;
@@ -351,18 +388,12 @@ void Kimura::print_spec_compare(string f, int m, vector<int> emp_spec){
 				double f = freqs[k];
 				double trans = transition_probs[j][k]/(double) N;
 				double binom_prob = gsl_sf_fact(m)/(gsl_sf_fact(i)*gsl_sf_fact(m-i)) * pow(f, i)*pow(1-f, m-i);
-				//cout << i << " "<< initf<< " "<< f << " "<< initdens << " "<< trans << " "<< binom_prob << "\n";
 				tmpsum+= trans*binom_prob;
 
 			}
 			theory_spec[i] += initdens*tmpsum;
 		}
 	}
-	//for (int i = 0; i <=m; i++){
-	//	double tmp = theory_spec[i];
-	//	if (i <1e-8) theory_spec[i] = lambda + (1-lambda) * tmp;
-	//	else theory_spec[i] = (1-lambda) *tmp;
-	//}
 	for (int i = 0; i <=m; i++){
 		outf << i << " "<< theory_spec[i]<< " "<<  (double) emp_spec[i]/(double) total << "\n";
 	}

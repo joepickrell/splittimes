@@ -41,6 +41,7 @@ public:
 	double all_llk(int, vector<int>, vector<double>);
 	double llk_anc(int, vector<int>);
 	double optim_anc(int, vector<int>);
+	double optim_anc_h0(int, vector<int>);
 	int golden_section_a(double, double, double, double, int, vector<int>, double *);
 	int golden_section_b(double, double, double, double, int, vector<int>, double *);
 	int golden_section_c(double, double, double, double, int, vector<int>, double *);
@@ -48,6 +49,7 @@ public:
 	void print_spec_compare(int, vector<int>);
 	void print_spec_compare(string, int, vector<int>);
 	void print_params(string);
+	void reset();
 	//pair<vector<double>, vector<double> > get_complete_spectrum(vector<double>, double);
 };
 
