@@ -18,6 +18,7 @@ using namespace std;
 void printopts(){
         cout << "Options:\n";
         cout << "-i [file name] input file\n";
+        cout << "-p population\n";
         cout << "-d drift length\n";
         cout << "-o [file name] outfile file\n";
         cout << "\n";
@@ -26,6 +27,7 @@ void printopts(){
 string infile;
 string outfile = "split_out";
 int blocksize = 500;
+string population;
 double d;
 
 int main(int argc, char *argv[]){
@@ -40,6 +42,11 @@ int main(int argc, char *argv[]){
     	printopts();
     	exit(1);
     }
+    if (cmdline.HasSwitch("-p")) population = cmdline.GetArgument("-p", 0).c_str();
+    else{
+    	printopts();
+    	exit(1);
+    }
     if (cmdline.HasSwitch("-d")) d= atof(cmdline.GetArgument("-d", 0).c_str());
     else{
     	printopts();
@@ -48,7 +55,8 @@ int main(int argc, char *argv[]){
     if (cmdline.HasSwitch("-o")) outfile = cmdline.GetArgument("-o", 0).c_str();
 
     CountData cdata(infile, blocksize);
-    vector<int> counts = cdata.get_der_counts(0);
+    int which = cdata.pop2id[population];
+    vector<int> counts = cdata.get_der_counts(which);
     for (vector<int>::iterator it = counts.begin(); it != counts.end(); it++){
     	cout << *it << "\n";
     }
@@ -78,7 +86,7 @@ int main(int argc, char *argv[]){
     double lambda = k.lambda;
     vector<double> lambdas;
     for (int i = 0; i < cdata.nblock; i++){
-    	vector<int> tmpc = cdata.get_der_counts_jackknife(0, i);
+    	vector<int> tmpc = cdata.get_der_counts_jackknife(which, i);
     	//for (vector<int>::iterator it = tmpc.begin(); it != tmpc.end(); it++){
     	//	cout << *it << "\n";
     	//}
