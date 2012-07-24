@@ -40,7 +40,7 @@ public:
 	double llk(int, int, vector<double>);
 	double all_llk(int, vector<int>, vector<double>);
 	double llk_anc(int, vector<int>);
-	double optim_anc(int, vector<int>);
+	double optim_anc(int, vector<int>, bool);
 	double optim_anc_h0(int, vector<int>);
 	int golden_section_a(double, double, double, double, int, vector<int>, double *);
 	int golden_section_b(double, double, double, double, int, vector<int>, double *);

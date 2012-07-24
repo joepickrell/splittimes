@@ -158,9 +158,9 @@ void Kimura::print_transition_probs(string outfile){
 	}
 }
 
-double Kimura::optim_anc(int m, vector<int> obs){
+double Kimura::optim_anc(int m, vector<int> obs, bool p){
 	double start_llik = llk_anc(m, obs);
-	//cout << "start "<< start_llik << "\n";
+	if (p) cout << "start a: "<< a << " b: "<< b << " c: "<< c << " lambda: "<< lambda << " llk: "<< start_llik << "\n";
 	double current_llk = start_llik;
 	bool done = false;
 	int nit = 0;
@@ -177,13 +177,14 @@ double Kimura::optim_anc(int m, vector<int> obs){
 		//cout << "c_a "<< current_llk << "\n";
 		golden_section_b(min, guessb, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_b "<< current_llk << "\n";
-		golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
+		//golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_c "<< current_llk << "\n";
 		golden_section_lambda(-20.0, guesslambda, 0, 0.0001, m, obs, &current_llk);
 		double new_llik = llk_anc(m, obs);
 		if (new_llik < start_llik+ epsilon) done = true;
 		else start_llik = new_llik;
-
+		nit++;
+		if (p) cout << "iteration "<< nit <<" a: "<< a << " b: "<< b << " c: "<< c << " lambda: "<< lambda << " llk: "<< start_llik << "\n";
 	}
 	return current_llk;
 }
@@ -209,7 +210,7 @@ double Kimura::optim_anc_h0(int m, vector<int> obs){
 		//cout << "c_a "<< current_llk << "\n";
 		golden_section_b(min, guessb, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_b "<< current_llk << "\n";
-		golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
+		//golden_section_c(min, guessc, max, 0.0001, m, obs, &current_llk);
 		//cout << "c_c "<< current_llk << "\n";
 		//golden_section_lambda(-20.0, guesslambda, -1, 0.0001, m, obs, &current_llk);
 		double new_llik = llk_anc(m, obs);
