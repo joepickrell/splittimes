@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
 */
     Kimura k(d);
     int m = counts.size()-1;
-    k.optim_anc(m, counts);
+    k.optim_anc(m, counts, true);
     k.print_spec_compare(outfile+".spec", m, counts);
     k.print_params(outfile+".params");
     k.reset();
@@ -91,8 +91,8 @@ int main(int argc, char *argv[]){
     	//	cout << *it << "\n";
     	//}
     	//k.reset();
-    	k.optim_anc(m, tmpc);
-    	cout << k.lambda << "\n";
+    	k.optim_anc(m, tmpc, false);
+    	//cout << k.lambda << "\n";
     	lambdas.push_back(k.lambda);
     }
     double m_lambda = 0;

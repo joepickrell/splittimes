@@ -18,6 +18,10 @@ vector<int> CountData::get_der_counts(int which){
 	vector<int> toreturn(nchrom, 0);
 	for (vector<vector<pair<int, int> > >::iterator it = allele_counts.begin(); it != allele_counts.end(); it++){
 		int count = it->at(which).first;
+		int total = count + it->at(which).second;
+		//cout << total << " "<< nchrom << "\n";
+		if (total < nchrom-1) continue;
+		//cout << "using\n";
 		toreturn[count]+=1;
 	}
 	return toreturn;
